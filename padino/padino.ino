@@ -14,10 +14,20 @@ void setup() {
 void loop() {
   while (!gb.update());
 
-  if (gb.buttons.pressed(BUTTON_A)) {
-    myPad.press(PadController::Pad1);
+#define IMPLEMENT_BUTTON(gbButton, padButton) \
+  if (gb.buttons.pressed(gbButton)) { \
+    myPad.press(padButton); \
+  } \
+  else if (gb.buttons.released(gbButton)) { \
+    myPad.release(padButton); \
   }
-  else if (gb.buttons.released(BUTTON_A)) {
-    myPad.release(PadController::Pad1);
-  }
+
+  IMPLEMENT_BUTTON(BUTTON_UP,     PadController::PadUp);
+  IMPLEMENT_BUTTON(BUTTON_DOWN,   PadController::PadDown);
+  IMPLEMENT_BUTTON(BUTTON_LEFT,   PadController::PadLeft);
+  IMPLEMENT_BUTTON(BUTTON_RIGHT,  PadController::PadRight);
+  IMPLEMENT_BUTTON(BUTTON_A,      PadController::Pad1);
+  IMPLEMENT_BUTTON(BUTTON_B,      PadController::Pad2);
+  IMPLEMENT_BUTTON(BUTTON_MENU,   PadController::Pad3);
+
 }

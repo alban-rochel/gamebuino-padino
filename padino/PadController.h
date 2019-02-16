@@ -1,5 +1,4 @@
-#ifndef PadController_H
-#define PadController_H
+#pragma once
 
 class PadController
 {
@@ -43,7 +42,3 @@ class PadController
   class Private;
   Private* d;
 };
-
-//extern PadController MyPadController;
-
-#endif
