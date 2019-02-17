@@ -21,7 +21,7 @@ static const uint8_t _hidReportDescriptor[] PROGMEM = {
     0x81, 0x03,                    //   INPUT (Cnst,Var,Abs)
     0x05, 0x09,                    //   USAGE_PAGE (Button)
     0x19, 0x01,                    //   USAGE_MINIMUM (Button 1)
-    0x29, 0x03,                    //   USAGE_MAXIMUM (Button 3)
+    0x29, 0x04,                    //   USAGE_MAXIMUM (Button 4)
     0x15, 0x00,                    //   LOGICAL_MINIMUM (0)
     0x25, 0x01,                    //   LOGICAL_MAXIMUM (1)
     0x95, 0x12,                    //   REPORT_COUNT (18)
@@ -102,6 +102,10 @@ void PadController::press(PadController::PadButton button)
     
     case Pad3:
     d->report[1] = (d->report[1] & 0b11111110) | 0b00000001;
+    break;
+    
+    case Pad4:
+    d->report[1] = (d->report[1] & 0b11111101) | 0b00000010;
     break;  
 
     default: break;
@@ -134,6 +138,10 @@ void PadController::release(PadController::PadButton button)
     
     case Pad3:
     d->report[1] = (d->report[1] & 0b11111110);
+    break;
+
+    case Pad4:
+    d->report[1] = (d->report[1] & 0b11111101);
     break;
 
     default: break;
