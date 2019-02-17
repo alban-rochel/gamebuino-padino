@@ -1,15 +1,39 @@
 #include <Gamebuino-Meta.h>
 #include <SPI.h>
 #include "PadController.h"
+#include "KeyboardPix.h"
 
 const uint8_t BTN_CS = 25;
+const uint8_t toggle = 0x8e;
 
 PadController myPad;
+KeyboardController myKeyboard;
 
 bool status[8]; // pressed status (true = pressed)
 PadController::PadButton buttons[8];
+uint8_t keys[8];
 
-bool firstStepInLoop;
+bool gamepadMode;
+
+Image gamepadImage = Image(gamepadData);
+Image keyboardImage = Image(keyboardData);
+
+uint8_t readButtons()
+{
+    //start SPI
+    SPI.beginTransaction(SPISettings(12000000, MSBFIRST, SPI_MODE0));
+    digitalWrite(BTN_CS, LOW);
+    //wait for PL to recover
+    delayMicroseconds(1);
+    //get the buttons states from the shift register
+    uint8_t buttonsStatus = SPI.transfer(1);
+    //end SPI
+    digitalWrite(BTN_CS, HIGH);
+    SPI.endTransaction();
+
+    return buttonsStatus;
+}
+
 
 void setup()
 {
@@ -31,46 +55,88 @@ void setup()
   buttons[6] = PadController::Pad3;
   buttons[7] = PadController::Pad4;
 
+  keys[0] = 's';
+  keys[1] = 'a';
+  keys[2] = 'd';
+  keys[3] = 'w';
+  keys[4] = 'j';
+  keys[5] = 'k';
+  keys[6] = 'l';
+  keys[7] = KEY_RETURN;
+
   myPad.init();
 
-  firstStepInLoop = true;
+  gamepadMode = true;
 
 }
 
 void loop()
 {
-  if(firstStepInLoop)
-  {
-    while(gb.update());
-    firstStepInLoop = false;
-  }
-  //start SPI
-  SPI.beginTransaction(SPISettings(12000000, MSBFIRST, SPI_MODE0));
-  digitalWrite(BTN_CS, LOW);
-  //wait for PL to recover
-  delayMicroseconds(1);
-  //get the buttons states from the shift register
-  uint8_t buttonsData = SPI.transfer(1);
-  //end SPI
-  digitalWrite(BTN_CS, HIGH);
-  SPI.endTransaction();
+  // initial display
+  gb.display.drawImage(0, 0, gamepadMode ? gamepadImage : keyboardImage);
+  while(gb.update()); // display
 
-  for(unsigned int ii = 0; ii < 8; ++ii)
+  uint8_t buttonStatus = 0xFF; // released
+
+  while(true) // actual main loop
   {
-    bool pressed = ((buttonsData & (1 << ii)) == 0);
-    if(status[ii] != pressed)
+    while(true) // while configuration unchanged
     {
-      status[ii] = pressed;
-      if(pressed)
+      buttonStatus = readButtons();
+
+      if(buttonStatus == toggle)
       {
-        myPad.press(buttons[ii]);
+        gamepadMode = !gamepadMode;
+        break;
       }
-      else
+
+      // handle button events
+      for(unsigned int ii = 0; ii < 8; ++ii)
       {
-        myPad.release(buttons[ii]);
-      }
-    }
+        bool pressed = ((buttonStatus & (1 << ii)) == 0);
+        if(status[ii] != pressed)
+        {
+          status[ii] = pressed;
+          if(gamepadMode)
+          {
+            if(pressed)
+            {
+              myPad.press(buttons[ii]);
+            }
+            else
+            {
+              myPad.release(buttons[ii]);
+            }
+          }
+          else
+          {
+            if(pressed)
+            {
+              myKeyboard.press(keys[ii]);
+            }
+            else
+            {
+              myKeyboard.release(keys[ii]);
+            }
+          }
+        }
+      } // end for(unsigned int ii = 0; ii < 8; ++ii)
+      
+    } // end while configuration unchanged
+
+    // Update display
+    gb.display.drawImage(0, 0, gamepadMode ? gamepadImage : keyboardImage);
+    while(gb.update()); // display
+
+    // Wait for buttons to be released before actually changing mode
+    while(readButtons() != 0xFF);
+
+    myPad.releaseAll();
+    myKeyboard.releaseAll();
   }
+
+  
+  
   
 
 /*#define IMPLEMENT_BUTTON(gbButton, padButton) \

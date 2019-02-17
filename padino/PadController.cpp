@@ -152,7 +152,9 @@ void PadController::release(PadController::PadButton button)
 
 void PadController::releaseAll(void)
 {
-
+  d->report[0] = 0;
+  d->report[1] = 0;
+  d->send();
 }
 
 //PadController MyPadController;
